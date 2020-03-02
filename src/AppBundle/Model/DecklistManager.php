@@ -162,6 +162,8 @@ class DecklistManager {
             $sphere = $this->doctrine->getRepository('AppBundle:Sphere')->findOneBy(['code' => $sphere_code]);
         }
 
+        $numcores = $request->query->get('numcores');
+
         $author_name = filter_var($request->query->get('author'), FILTER_SANITIZE_STRING);
 
         $decklist_name = filter_var($request->query->get('name'), FILTER_SANITIZE_STRING);
@@ -172,6 +174,9 @@ class DecklistManager {
 
         $threat_op = $request->query->get('threato');
         $threat = $request->query->get('threat');
+
+        $reputation_op = $request->query->get('reputationo');
+        $reputation = $request->query->get('reputation');
 
         $require_description = $request->query->get('require_description');
 
@@ -207,6 +212,18 @@ class DecklistManager {
             $qb->setParameter('threat', $threat);
         }
 
+        if (!empty($reputation) && is_numeric($reputation)) {
+            $qb->innerJoin('d.user', 'u');
+            if ($reputation_op == '>') {
+                $qb->andWhere('u.reputation > :reputation');
+            } elseif ($reputation_op == '<') {
+                $qb->andWhere('u.reputation < :reputation');
+            } else {
+                $qb->andWhere('u.reputation = :reputation');
+            }
+            $qb->setParameter('reputation', $reputation);
+        }
+
         if ($require_description) {
             $qb->andWhere($qb->expr()->gt($qb->expr()->length('d.descriptionHtml'),0));
         }
@@ -222,7 +239,8 @@ class DecklistManager {
                     $qb->innerJoin('d.slots', "s$i");
                     $qb->andWhere("s$i.card = :card$i");
                     $qb->setParameter("card$i", $card);
-                    $packs[] = $card->getPack()->getId();
+                    // Add packs containing requested cards
+                    // $packs[] = $card->getPack()->getId(); 
                 }
             }
             if (!empty($packs)) {
@@ -244,6 +262,17 @@ class DecklistManager {
                 $qb->andWhere($qb->expr()->not($qb->expr()->exists($sub->getDQL())));
             }
 
+            // Num cores
+            $sub = $this->doctrine->createQueryBuilder();
+            $sub->select("j");
+            $sub->from("AppBundle:Card", "j");
+            $sub->innerJoin('AppBundle:Decklistslot', 'v', 'WITH', 'v.card = j');
+            $sub->where('v.decklist = d');
+            $sub->andWhere('j.type <> 1'); // Don't match heroes
+            $sub->andWhere('j.pack = 1'); // Match Core Set
+            $sub->andWhere('v.quantity > j.quantity * :numcores');
+            $qb->setParameter('numcores', $numcores);
+            $qb->andWhere($qb->expr()->not($qb->expr()->exists($sub->getDQL())));
         }
 
         switch ($sort) {

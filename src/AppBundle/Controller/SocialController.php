@@ -58,12 +58,15 @@ class SocialController extends Controller {
         */
 
         /* @var $lastPack \AppBundle\Entity\Pack */
-        $lastPack = $deck->getLastPack();
+        
+	/*
+	$lastPack = $deck->getLastPack();
         if (!$lastPack->getDateRelease() || $lastPack->getDateRelease() > new \DateTime()) {
             $this->get('session')->getFlashBag()->set('error', "You cannot publish this deck yet, because it has unreleased cards.");
 
             return $this->redirect($this->generateUrl('deck_view', [ 'deck_id' => $deck->getId() ]));
         }
+	*/
 
         $problem = $this->get('deck_validation_helper')->findProblem($deck, true);
         if ($problem) {
@@ -319,6 +322,9 @@ class SocialController extends Controller {
         $decklist_name = filter_var($request->query->get('name'), FILTER_SANITIZE_STRING);
         $starting_threat = intval(filter_var($request->query->get('threat'), FILTER_SANITIZE_NUMBER_INT));
         $starting_threat_o = $request->query->get('threato');
+        $author_reputation = intval(filter_var($request->query->get('reputation'), FILTER_SANITIZE_NUMBER_INT));
+        $author_reputation_o = $request->query->get('reputationo');
+        $numcores = $request->query->get('numcores');
         $require_description = $request->query->get('require_description');
 
         $sort = $request->query->get('sort');
@@ -372,6 +378,9 @@ class SocialController extends Controller {
             'name' => $decklist_name,
             'threat' => $starting_threat,
             'threato' => $starting_threat_o,
+            'reputation' => $author_reputation,
+            'reputationo' => $author_reputation_o,
+            'numcores' => $numcores,
             'require_description' => $require_description
         ];
         $params['sort_' . $sort] = ' selected="selected"';
@@ -1089,6 +1098,9 @@ class SocialController extends Controller {
             'name' => '',
             'threat' => '',
             'threato' => '',
+            'reputation' => '',
+            'reputationo' => '>',
+            'numcores' => '3',
             'require_description' => 0
         ]);
 

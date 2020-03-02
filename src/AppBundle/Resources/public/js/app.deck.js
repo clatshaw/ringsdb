@@ -22,9 +22,9 @@
      */
 
     layouts.type = {};
-    layouts.type[1] = _.template('<div class="deck-content"><%= meta %><%= heroes %><%= allies %><%= attachments %><%= events %><%= sidequests %><%= treasures %></div>');
-    layouts.type[2] = _.template('<div class="deck-content"><div class="row"><div class="col-sm-12"><%= meta %></div></div><div class="row"><div class="col-sm-12"><%= heroes %></div></div><div class="row"><div class="col-sm-6 col-print-6"><%= allies %></div><div class="col-sm-6 col-print-6"><%= attachments %><%= events %><%= sidequests %><%= treasures %></div></div></div>');
-    layouts.type[3] = _.template('<div class="deck-content"><div class="row"><div class="col-sm-4"><%= meta %><%= heroes %></div><div class="col-sm-4"><%= allies %></div><div class="col-sm-4"><%= attachments %><%= events %><%= sidequests %><%= treasures %></div></div></div>');
+    layouts.type[1] = _.template('<div class="deck-content"><%= meta %><%= heroes %><%= contract %><%= allies %><%= attachments %><%= events %><%= sidequests %><%= treasures %></div>');
+    layouts.type[2] = _.template('<div class="deck-content"><div class="row"><div class="col-sm-12"><%= meta %></div></div><div class="row"><div class="col-sm-12"><%= heroes %></div></div><div class="row"><div class="col-sm-6 col-print-6"><%= contract %><%= allies %></div><div class="col-sm-6 col-print-6"><%= attachments %><%= events %><%= sidequests %><%= treasures %></div></div></div>');
+    layouts.type[3] = _.template('<div class="deck-content"><div class="row"><div class="col-sm-4"><%= meta %><%= heroes %></div><div class="col-sm-4"><%= contract %><%= allies %></div><div class="col-sm-4"><%= attachments %><%= events %><%= sidequests %><%= treasures %></div></div></div>');
 
     layouts.position = {};
     layouts.position[1] =  function(data) {
@@ -255,8 +255,13 @@
         if (!cards) {
             cards = is_sideboard ? deck.get_side_cards() : deck.get_cards();
         }
+        // Remove contracts from card count
+        var num_contracts = 0;
+        _.each(cards, function(card) {
+            if (card.type_code == 'contract') num_contracts += card.indeck;
+        })
         var quantities = _.pluck(cards, is_sideboard ? 'insideboard' : 'indeck');
-        return _.reduce(quantities, function(memo, num) { return memo + num; }, 0);
+        return _.reduce(quantities, function(memo, num) { return memo + num; }, 0) - num_contracts;
     };
 
     /**
@@ -331,6 +336,7 @@
             deck.update_layout_section(data, 'attachments', deck.get_layout_data_one_section('type_code', 'attachment', 'type_name', true));
             deck.update_layout_section(data, 'events', deck.get_layout_data_one_section('type_code', 'event', 'type_name', true));
             deck.update_layout_section(data, 'sidequests', deck.get_layout_data_one_section('type_code', 'player-side-quest', 'type_name', true));
+            deck.update_layout_section(data, 'contract', deck.get_layout_data_one_section('type_code', 'contract', 'type_name', true));
             deck.update_layout_section(data, 'treasures', deck.get_layout_data_one_section('type_code', 'treasure', 'type_name', true));
         }
 
@@ -374,15 +380,23 @@
                     deck_id: deck.get_id()
                 });
             }
-
-            var link = $('<a target="_blank"></a>').attr('href', url).text(deck.get_name());
-
-            title = $('<h4 style="font-weight: bold"></h4>').append(link);
+            // If published or is_author, generate url to deck.
+            if (is_published) {
+                var link = $('<a target="_blank"></a>').attr('href', url).text(deck.get_name());
+            } else if (app.user.data && app.user.data.is_author) {
+                var link = $('<a target="_blank"></a>').attr('href', url).text(deck.get_name());
+            } else {
+                var link = '<i>'+deck.get_name()+'</i> <small>(unpublished)</small>';
+            }
+/*             if (is_published) {
+                var link = $('<a target="_blank"></a>').attr('href', url).text(deck.get_name());
+            } else {
+                var link = '<i>'+deck.get_name()+'</i> <small>(unpublished)</small>';
+            } */
+            title = $('<h4 style="height: 38px"></h4>').append(link);
         } else {
             title = $('<h4 style="font-weight: bold">Main Deck</h4>');
         }
-
-
         var threat = $('<div>Starting Threat: <b>' + deck.get_starting_threat() + '</b></div>')
 
         var text = [herocount, herocount == 1 ? ' Hero, ': ' Heroes, ', drawcount, drawcount == 1 ? ' Card': ' Cards' ].join(' ');
@@ -406,6 +420,7 @@
         }
 
         deck.update_layout_section(data, 'meta', title);
+        //deck.update_layout_section(data, 'meta', $('<br>'));
         deck.update_layout_section(data, 'meta', threat);
         deck.update_layout_section(data, 'meta', sizeinfo);
 
@@ -426,12 +441,14 @@
                 deck.update_layout_section(data, 'attachments', deck.get_layout_data_one_section('type_code', 'attachment', 'type_name'));
                 deck.update_layout_section(data, 'events', deck.get_layout_data_one_section('type_code', 'event', 'type_name'));
                 deck.update_layout_section(data, 'sidequests', deck.get_layout_data_one_section('type_code', 'player-side-quest', 'type_name'));
+                deck.update_layout_section(data, 'contract', deck.get_layout_data_one_section('type_code', 'contract', 'type_name'));
                 deck.update_layout_section(data, 'treasures', deck.get_layout_data_one_section('type_code', 'treasure', 'type_name'));
             } else {
                 deck.update_layout_section(data, 'allies', '');
                 deck.update_layout_section(data, 'attachments', '');
                 deck.update_layout_section(data, 'events', '');
                 deck.update_layout_section(data, 'sidequests', '');
+                deck.update_layout_section(data, 'contract', '');
                 deck.update_layout_section(data, 'treasures', '');
             }
         }

@@ -132,7 +132,19 @@
     ui.build_type_selector = function() {
         var filter = $('[data-filter="type_code"]').empty();
 
-        var type_codes = app.data.cards.distinct('type_code').sort();
+        var type_codes = app.data.cards.distinct('type_code');
+        type_codes.splice(type_codes.indexOf('contract'), 1);
+        type_codes.unshift('contract');
+        type_codes.splice(type_codes.indexOf('treasure'), 1);
+        type_codes.unshift('treasure');
+        type_codes.splice(type_codes.indexOf('player-side-quest'), 1);
+        type_codes.unshift('player-side-quest');
+        type_codes.splice(type_codes.indexOf('event'), 1);
+        type_codes.unshift('event');
+        type_codes.splice(type_codes.indexOf('attachment'), 1);
+        type_codes.unshift('attachment');
+        type_codes.splice(type_codes.indexOf('ally'), 1);
+        type_codes.unshift('ally');
         type_codes.splice(type_codes.indexOf('hero'), 1);
         type_codes.unshift('hero');
 
@@ -745,6 +757,7 @@
         app.deck.display('#sideboard-content', DisplayOptions, true);
         setTimeout(function() {
             app.draw_simulator && app.draw_simulator.reset();
+            app.play_simulator && app.play_simulator.reset();
             app.deck_charts && app.deck_charts.setup();
             app.suggestions && Config['show-suggestions'] != 0 && app.suggestions.compute();
         }, 1);
@@ -775,6 +788,7 @@
             name: 'cardnames',
             displayKey: 'name',
             source: findMatches,
+            limit: 10,
             templates: {
                 suggestion: function(card) {
                     return $('<div class="fg-' + card.sphere_code + '"><span class="icon-fw icon-' + card.sphere_code + '"></span> <strong>' + card.name + '</strong> <small><i>' + card.pack_name + '</i></small></div>');
@@ -824,6 +838,7 @@
         app.textcomplete && app.textcomplete.setup('#description');
         app.markdown && app.markdown.setup('#description', '#description-preview');
         app.draw_simulator && app.draw_simulator.on_dom_loaded();
+        app.play_simulator && app.play_simulator.on_dom_loaded();
         app.card_modal && $('#filter-text').on('typeahead:selected typeahead:autocompleted', app.card_modal.typeahead);
     };
 
@@ -834,6 +849,7 @@
     ui.on_data_loaded = function() {
         ui.set_max_qty();
         app.draw_simulator && app.draw_simulator.on_data_loaded();
+        app.play_simulator && app.play_simulator.on_data_loaded();
     };
 
     /**
